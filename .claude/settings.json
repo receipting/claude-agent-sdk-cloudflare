@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit",
+      "MultiEdit",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(tsx:*)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Glob",
+      "Grep",
+      "Task",
+      "WebFetch",
+      "WebSearch",
+      "TodoWrite",
+      "BashOutput",
+      "KillShell"
+    ],
+    "deny": ["Bash(sudo:*)"]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/check-setup.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

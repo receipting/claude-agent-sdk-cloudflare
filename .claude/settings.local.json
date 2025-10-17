@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__resolve-library-id",
+      "WebSearch",
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "mcp__context7__get-library-docs",
+      "Bash(docker run:*)",
+      "Bash(docker build:*)",
+      "Bash(curl:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker logs:*)",
+      "Bash(npx tsc:*)",
+      "Read(//Users/hudge/github_projects/**)",
+      "Read(//Users/hudge/github_projects/document-extractor/**)",
+      "Bash(wrangler deploy:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "allowSyntheticDefaultImports": true,
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["server.ts"],
+  "exclude": ["node_modules", "dist", "web"]
+}

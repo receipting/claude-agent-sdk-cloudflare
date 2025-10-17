@@ -1,0 +1,21 @@
+name = "claude-agent-worker"
+main = "server.ts"
+compatibility_date = "2025-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[containers]]
+class_name = "AgentContainer"
+image = "./Dockerfile"
+max_instances = 60
+instance_type = "standard-2"
+
+[[durable_objects.bindings]]
+name = "AGENT_CONTAINER"
+class_name = "AgentContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AgentContainer"]
