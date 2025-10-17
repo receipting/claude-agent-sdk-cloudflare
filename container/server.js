@@ -16,7 +16,7 @@ const server = http.createServer(async (req, res) => {
         body += chunk;
       }
 
-      const { prompt } = JSON.parse(body || "{}");
+      const { prompt, session_id } = JSON.parse(body || "{}");
 
       if (!prompt) {
         res.writeHead(400, { "content-type": "application/json" });
@@ -32,6 +32,7 @@ const server = http.createServer(async (req, res) => {
       const response = query({
         prompt,
         options: { model: "claude-sonnet-4-5" },
+        session_id,
       });
 
       for await (const message of response) {

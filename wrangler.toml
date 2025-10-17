@@ -19,3 +19,6 @@ class_name = "AgentContainer"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["AgentContainer"]
+
+[triggers]
+crons = ["0 2 * * *"]  # Run daily at 2 AM UTC
