@@ -27,16 +27,5 @@
     ],
     "deny": ["Bash(sudo:*)"]
   },
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.claude/hooks/check-setup.sh"
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }
