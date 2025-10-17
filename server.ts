@@ -4,12 +4,10 @@ import { Container } from "@cloudflare/containers";
 export class AgentContainer extends Container {
   defaultPort = 8080;
   sleepAfter = "20m";
-  private sql: SqlStorage;
   private readonly PURGE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-  constructor(ctx: DurableObjectState, env: any) {
+  constructor(ctx: DurableObjectState<{}>, env: any) {
     super(ctx, env);
-    this.sql = ctx.storage.sql;
     this.envVars = {
       CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN || "",
     };
@@ -18,9 +16,9 @@ export class AgentContainer extends Container {
 
   private initializeDatabase() {
     // Enable foreign key enforcement
-    this.sql.exec(`PRAGMA foreign_keys = ON`);
+    this.ctx.storage.sql.exec(`PRAGMA foreign_keys = ON`);
     // Create conversations table
-    this.sql.exec(`
+    this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
         session_id TEXT PRIMARY KEY,
         account_id TEXT NOT NULL,
@@ -31,7 +29,7 @@ export class AgentContainer extends Container {
     `);
 
     // Create messages table
-    this.sql.exec(`
+    this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,
@@ -43,15 +41,15 @@ export class AgentContainer extends Container {
     `);
 
     // Create indexes
-    this.sql.exec(`
+    this.ctx.storage.sql.exec(`
       CREATE INDEX IF NOT EXISTS idx_conversations_last_accessed 
       ON conversations(last_accessed_at)
     `);
-    this.sql.exec(`
+    this.ctx.storage.sql.exec(`
       CREATE INDEX IF NOT EXISTS idx_conversations_account 
       ON conversations(account_id)
     `);
-    this.sql.exec(`
+    this.ctx.storage.sql.exec(`
       CREATE INDEX IF NOT EXISTS idx_messages_session 
       ON messages(session_id, timestamp)
     `);
@@ -62,13 +60,13 @@ export class AgentContainer extends Container {
     
     try {
       // Find conversations to delete for logging
-      const toDelete = this.sql.exec(
+      const toDelete = this.ctx.storage.sql.exec(
         `SELECT session_id FROM conversations WHERE last_accessed_at < ?`,
         cutoffTime
       ).toArray();
 
       // Delete conversations (messages cascade automatically)
-      const result = this.sql.exec(
+      const result = this.ctx.storage.sql.exec(
         `DELETE FROM conversations WHERE last_accessed_at < ?`,
         cutoffTime
       );
@@ -88,15 +86,15 @@ export class AgentContainer extends Container {
 
   async getStorageStats() {
     try {
-      const totalConversations = this.sql.exec(
+      const totalConversations = this.ctx.storage.sql.exec(
         `SELECT COUNT(*) as count FROM conversations`
       ).toArray()[0]?.count || 0;
       
-      const oldestConversation = this.sql.exec(
+      const oldestConversation = this.ctx.storage.sql.exec(
         `SELECT MIN(created_at) as oldest FROM conversations`
       ).toArray()[0]?.oldest;
       
-      const conversationsToExpire = this.sql.exec(
+      const conversationsToExpire = this.ctx.storage.sql.exec(
         `SELECT COUNT(*) as count FROM conversations WHERE last_accessed_at < ?`,
         Date.now() - this.PURGE_THRESHOLD_MS
       ).toArray()[0]?.count || 0;
@@ -104,7 +102,7 @@ export class AgentContainer extends Container {
       return {
         total_conversations: totalConversations,
         oldest_conversation_age_days: oldestConversation 
-          ? (Date.now() - oldestConversation) / (24 * 60 * 60 * 1000) 
+          ? (Date.now() - Number(oldestConversation)) / (24 * 60 * 60 * 1000) 
           : null,
         conversations_ready_to_purge: conversationsToExpire,
         retention_policy_days: 30
@@ -126,7 +124,7 @@ export class AgentContainer extends Container {
     
     try {
       // Upsert conversation
-      this.sql.exec(
+      this.ctx.storage.sql.exec(
         `INSERT INTO conversations (session_id, account_id, created_at, last_accessed_at, metadata)
          VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(session_id) DO UPDATE SET last_accessed_at = ?`,
@@ -135,7 +133,7 @@ export class AgentContainer extends Container {
 
       // Store messages
       for (const msg of messages) {
-        this.sql.exec(
+        this.ctx.storage.sql.exec(
           `INSERT INTO messages (session_id, timestamp, role, content) VALUES (?, ?, ?, ?)`,
           sessionId, now, msg.role, JSON.stringify(msg.content)
         );
@@ -148,7 +146,7 @@ export class AgentContainer extends Container {
 
   async getConversation(sessionId: string) {
     try {
-      const conversation = this.sql.exec(
+      const conversation = this.ctx.storage.sql.exec(
         `SELECT * FROM conversations WHERE session_id = ?`,
         sessionId
       ).toArray()[0];
@@ -157,13 +155,13 @@ export class AgentContainer extends Container {
         return null;
       }
 
-      const messages = this.sql.exec(
+      const messages = this.ctx.storage.sql.exec(
         `SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC`,
         sessionId
       ).toArray();
 
       const now = Date.now();
-      this.sql.exec(
+      this.ctx.storage.sql.exec(
         `UPDATE conversations SET last_accessed_at = ? WHERE session_id = ?`,
         now, sessionId
       );
@@ -172,7 +170,7 @@ export class AgentContainer extends Container {
         ...conversation,
         last_accessed_at: now,
         metadata: conversation.metadata ? JSON.parse(conversation.metadata as string) : {},
-        messages: messages.map(m => ({
+        messages: messages.map((m: any) => ({
           role: m.role,
           content: JSON.parse(m.content as string),
           timestamp: m.timestamp
@@ -186,7 +184,7 @@ export class AgentContainer extends Container {
 
   async listConversations(accountId: string, limit = 50, offset = 0) {
     try {
-      const conversations = this.sql.exec(
+      const conversations = this.ctx.storage.sql.exec(
         `SELECT session_id, created_at, last_accessed_at, metadata 
          FROM conversations 
          WHERE account_id = ? 
@@ -195,7 +193,7 @@ export class AgentContainer extends Container {
         accountId, limit, offset
       ).toArray();
 
-      return conversations.map(c => ({
+      return conversations.map((c: any) => ({
         session_id: c.session_id,
         created_at: c.created_at,
         last_accessed_at: c.last_accessed_at,
@@ -209,7 +207,7 @@ export class AgentContainer extends Container {
 
   async deleteConversation(sessionId: string) {
     try {
-      this.sql.exec(
+      this.ctx.storage.sql.exec(
         `DELETE FROM conversations WHERE session_id = ?`,
         sessionId
       );
@@ -266,7 +264,7 @@ export class AgentContainer extends Container {
     }
     
     if (url.pathname === "/store-conversation" && request.method === "POST") {
-      const body = await request.json();
+      const body = await request.json() as { session_id: string; account_id: string; messages: any[] };
       await this.storeConversation(body.session_id, body.account_id, body.messages);
       return new Response(JSON.stringify({ success: true }), {
         headers: { "content-type": "application/json" }
@@ -329,7 +327,7 @@ app.post("/query", async (c) => {
       })
     );
 
-    const result = await containerRes.json();
+    const result = await containerRes.json() as { response?: string; [key: string]: any };
 
     // Store conversation
     try {
@@ -352,7 +350,7 @@ app.post("/query", async (c) => {
       // Don't fail the request if storage fails
     }
 
-    return c.json({ ...result, session_id: sessionId });
+    return c.json({ ...(typeof result === 'object' && result !== null ? result : {}), session_id: sessionId });
   } catch (error: any) {
     console.error("[Query Error]", error);
     return c.json({ error: error.message }, 500);
