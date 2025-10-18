@@ -3,7 +3,7 @@ import { Container } from "@cloudflare/containers";
 
 export class AgentContainer extends Container {
   defaultPort = 8080;
-  sleepAfter = "20m";
+  sleepAfter = "5m";
 
   constructor(ctx: DurableObjectState, env: any) {
     super(ctx, env);
@@ -11,6 +11,29 @@ export class AgentContainer extends Container {
       CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN || "",
       MODEL: env.MODEL || "claude-sonnet-4-5",
     };
+  }
+
+  override onStart() {
+    console.log("[Container] Started", {
+      timestamp: new Date().toISOString(),
+      port: this.defaultPort,
+      sleepAfter: this.sleepAfter
+    });
+  }
+
+  override onStop(status: any) {
+    console.log("[Container] Stopped", {
+      reason: status?.reason,
+      exitCode: status?.exitCode,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  override onError(error: unknown) {
+    console.error("[Container] Error", {
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
   }
 }
 
