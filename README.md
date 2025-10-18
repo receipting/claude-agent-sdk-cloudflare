@@ -1,6 +1,10 @@
-# Claude Agent SDK on Cloudflare Containers
+# Claude Agent SDK + Cloudflare Containers
 
-Run Claude Agent SDK in Cloudflare's container runtime. Each `accountId` gets its own Durable Object → isolated container → serialized execution.
+Cloudflare containers work differently than other container solutions. You get three components: a Worker (serverless compute), a Durable Object (storage), and a Container (isolated runtime).
+
+**The approach:** Do context creation in the Worker—SQL queries, data prep, etc.—because it's lightweight and fast. Only spin up the Container when you actually need the Claude Agent SDK. This lets you triage requests before paying the cost of a container cold start.
+
+**The benefit:** Workers are cheap and instant. Containers are slower to start and more expensive to run. Triage in the Worker, run agents in the Container. Durable Objects ensure serialized execution per account.
 
 ## Prerequisites
 
@@ -15,9 +19,13 @@ npm install -g @anthropic-ai/claude-code  # For getting OAuth token
 # 1. Install dependencies
 npm install && cd container && npm install && cd ..
 
-# 2. Get OAuth token (opens browser, copy token from terminal)
+# 2. Get OAuth token and create config (opens browser, copy token from terminal)
 claude setup-token
-echo "CLAUDE_CODE_OAUTH_TOKEN=paste-token-here" > .dev.vars
+cat > .dev.vars << EOF
+CLAUDE_CODE_OAUTH_TOKEN=paste-token-here
+MODEL=claude-sonnet-4-5
+API_KEY=your-secret-key-here
+EOF
 
 # 3. Start dev server (first run builds container image, takes ~30s)
 npm run dev
@@ -29,9 +37,10 @@ npm run dev
 # 4. Test it (use the port from above)
 ./test.sh 8787
 
-# Or manually:
+# Or manually (replace YOUR_API_KEY with value from .dev.vars):
 curl -X POST http://localhost:8787/query \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{"query": "What is 2+2?"}'
 ```
 
@@ -41,6 +50,10 @@ curl -X POST http://localhost:8787/query \
 ```
 
 ## Troubleshooting
+
+**"Unauthorized"**
+- Check `Authorization: Bearer <API_KEY>` header is included
+- Verify API_KEY in `.dev.vars` matches the header value
 
 **"CLAUDE_CODE_OAUTH_TOKEN not set"**
 - Check `.dev.vars` exists and contains your token
@@ -70,10 +83,19 @@ Request → Worker → DO.idFromName(accountId) → Container → Claude SDK
 
 ```bash
 npm run deploy
-wrangler secret put CLAUDE_CODE_OAUTH_TOKEN
+wrangler secret put CLAUDE_CODE_OAUTH_TOKEN  # Prompts for token
+wrangler secret put API_KEY  # Prompts for API key
+wrangler secret put MODEL  # Optional: defaults to claude-sonnet-4-5
 ```
 
 ## Configuration
+
+**Environment variables (.dev.vars for local, wrangler secret for production):**
+```bash
+CLAUDE_CODE_OAUTH_TOKEN=sk-ant-...
+API_KEY=your-secret-key-here
+MODEL=claude-sonnet-4-5  # Optional, defaults to claude-sonnet-4-5
+```
 
 **server.ts:**
 ```typescript

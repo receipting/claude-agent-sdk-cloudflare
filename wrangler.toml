@@ -1,5 +1,6 @@
 name = "claude-agent-worker"
 main = "server.ts"
+account_id = "7a25071bd379490c242277ea870df57a"
 compatibility_date = "2025-09-23"
 compatibility_flags = ["nodejs_compat"]
 
@@ -9,8 +10,8 @@ enabled = true
 [[containers]]
 class_name = "AgentContainer"
 image = "./Dockerfile"
-max_instances = 60
-instance_type = "standard-2"
+max_instances = 6
+instance_type = "basic"
 
 [[durable_objects.bindings]]
 name = "AGENT_CONTAINER"

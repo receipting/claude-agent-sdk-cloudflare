@@ -16,7 +16,7 @@ const server = http.createServer(async (req, res) => {
         body += chunk;
       }
 
-      const { prompt } = JSON.parse(body || "{}");
+      const { prompt } = JSON.parse(body || "{}") as { prompt?: string };
 
       if (!prompt) {
         res.writeHead(400, { "content-type": "application/json" });
@@ -31,7 +31,7 @@ const server = http.createServer(async (req, res) => {
       let responseText = "";
       const response = query({
         prompt,
-        options: { model: "claude-sonnet-4-5" },
+        options: { model: process.env.MODEL || "claude-sonnet-4-5" },
       });
 
       for await (const message of response) {
@@ -47,9 +47,10 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(JSON.stringify({ success: true, response: responseText }));
     } catch (error) {
-      console.error("[Container Error]", error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[Container Error]", errorMessage);
       res.writeHead(500, { "content-type": "application/json" });
-      return res.end(JSON.stringify({ error: error.message }));
+      return res.end(JSON.stringify({ error: errorMessage }));
     }
   }
 

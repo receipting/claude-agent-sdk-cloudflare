@@ -9,6 +9,7 @@ export class AgentContainer extends Container {
     super(ctx, env);
     this.envVars = {
       CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN || "",
+      MODEL: env.MODEL || "claude-sonnet-4-5",
     };
   }
 }
@@ -16,6 +17,8 @@ export class AgentContainer extends Container {
 type Bindings = {
   AGENT_CONTAINER: DurableObjectNamespace<AgentContainer>;
   CLAUDE_CODE_OAUTH_TOKEN: string;
+  MODEL?: string;
+  API_KEY: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -31,6 +34,13 @@ app.get("/health", (c) => {
 
 app.post("/query", async (c) => {
   try {
+    const authHeader = c.req.header("Authorization");
+    const expectedToken = c.env.API_KEY;
+
+    if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
     if (!c.env.CLAUDE_CODE_OAUTH_TOKEN) {
       return c.json({ error: "CLAUDE_CODE_OAUTH_TOKEN not set" }, 500);
     }
@@ -51,6 +61,7 @@ app.post("/query", async (c) => {
       startOptions: {
         envVars: {
           CLAUDE_CODE_OAUTH_TOKEN: c.env.CLAUDE_CODE_OAUTH_TOKEN,
+          MODEL: c.env.MODEL || "claude-sonnet-4-5",
         },
       },
     });
