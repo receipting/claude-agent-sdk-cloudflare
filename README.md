@@ -1,6 +1,6 @@
 # Claude Agent SDK + Cloudflare Containers
 
-Cloudflare containers are such good fit for Claude Agent SDK because the work differently than other container solutions. You get three components: a Worker (serverless compute), a Durable Object (storage), and a Container (isolated Agent runtime).
+Cloudflare containers are such good fit for Claude Agent SDK because they work differently than other container solutions. Instead of just a container, you get three components: a Worker (serverless compute), a Durable Object (storage), and a Container (isolated Agent runtime).
 
 You use the Worker to set up context (sql queries etc) allowing you to triage requests to make sure they actually need an agent to solve them before even starting the container. So fast, so economical, so good!
 
