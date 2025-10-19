@@ -23,9 +23,9 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ error: "No prompt provided" }));
       }
 
-      if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+      if (!process.env.ANTHROPIC_API_KEY) {
         res.writeHead(500, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ error: "CLAUDE_CODE_OAUTH_TOKEN not set" }));
+        return res.end(JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }));
       }
 
       let responseText = "";
@@ -60,5 +60,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Claude Agent SDK container listening on port ${PORT}`);
-  console.log(`Token configured: ${!!process.env.CLAUDE_CODE_OAUTH_TOKEN}`);
+  console.log(`API key configured: ${!!process.env.ANTHROPIC_API_KEY}`);
 });

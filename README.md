@@ -8,8 +8,9 @@ You use the Worker to set up context (sql queries etc) allowing you to triage re
 
 ```bash
 npm install -g wrangler  # Cloudflare CLI
-npm install -g @anthropic-ai/claude-code  # For getting OAuth token
 ```
+
+Get your Anthropic API key from https://console.anthropic.com/settings/keys
 
 ## Quickstart
 
@@ -17,10 +18,9 @@ npm install -g @anthropic-ai/claude-code  # For getting OAuth token
 # 1. Install dependencies
 npm install && cd container && npm install && cd ..
 
-# 2. Get OAuth token and create config (opens browser, copy token from terminal)
-claude setup-token
+# 2. Create config with your Anthropic API key
 cat > .dev.vars << EOF
-CLAUDE_CODE_OAUTH_TOKEN=paste-token-here
+ANTHROPIC_API_KEY=sk-ant-your-api-key-here
 MODEL=claude-sonnet-4-5
 API_KEY=your-secret-key-here
 EOF
@@ -53,19 +53,19 @@ curl -X POST http://localhost:8787/query \
 - Check `Authorization: Bearer <API_KEY>` header is included
 - Verify API_KEY in `.dev.vars` matches the header value
 
-**"CLAUDE_CODE_OAUTH_TOKEN not set"**
-- Check `.dev.vars` exists and contains your token
-- Token must start with `sk-ant-`
+**"ANTHROPIC_API_KEY not set"**
+- Check `.dev.vars` exists and contains your API key
+- Get your API key from https://console.anthropic.com/settings/keys
+- Key must start with `sk-ant-`
 
 **"Container failed to start"**
 - First run builds Docker image (~30 seconds)
 - Check `docker ps` to see if container is running
 - Try `wrangler dev --local` for faster local testing
 
-**"command not found: claude"**
-```bash
-npm install -g @anthropic-ai/claude-code
-```
+**Rate limits or quota errors**
+- Check your Anthropic API usage at https://console.anthropic.com/settings/limits
+- Upgrade your plan if needed
 
 ## How it works
 
@@ -81,8 +81,8 @@ Request → Worker → DO.idFromName(accountId) → Container → Claude SDK
 
 ```bash
 npm run deploy
-wrangler secret put CLAUDE_CODE_OAUTH_TOKEN  # Prompts for token
-wrangler secret put API_KEY  # Prompts for API key
+wrangler secret put ANTHROPIC_API_KEY  # Prompts for Anthropic API key
+wrangler secret put API_KEY  # Prompts for your API auth key
 wrangler secret put MODEL  # Optional: defaults to claude-sonnet-4-5
 ```
 
@@ -90,10 +90,36 @@ wrangler secret put MODEL  # Optional: defaults to claude-sonnet-4-5
 
 **Environment variables (.dev.vars for local, wrangler secret for production):**
 ```bash
-CLAUDE_CODE_OAUTH_TOKEN=sk-ant-...
-API_KEY=your-secret-key-here
+ANTHROPIC_API_KEY=sk-ant-...  # Get from https://console.anthropic.com/settings/keys
+API_KEY=your-secret-key-here  # Your own API auth key for protecting the endpoint
 MODEL=claude-sonnet-4-5  # Optional, defaults to claude-sonnet-4-5
 ```
+
+### Alternative: OAuth Token (Requires Anthropic Permission)
+
+If you have permission from Anthropic to use Claude Code OAuth tokens:
+
+**Prerequisites:**
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**Setup:**
+```bash
+claude setup-token  # Opens browser, copy token from terminal
+cat > .dev.vars << EOF
+CLAUDE_CODE_OAUTH_TOKEN=sk-ant-your-oauth-token-here
+MODEL=claude-sonnet-4-5
+API_KEY=your-secret-key-here
+EOF
+```
+
+**Deploy:**
+```bash
+wrangler secret put CLAUDE_CODE_OAUTH_TOKEN
+```
+
+Note: OAuth tokens require prior approval from Anthropic. For most users, use `ANTHROPIC_API_KEY` instead.
 
 **server.ts:**
 ```typescript

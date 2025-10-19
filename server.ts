@@ -8,7 +8,7 @@ export class AgentContainer extends Container {
   constructor(ctx: DurableObjectState, env: any) {
     super(ctx, env);
     this.envVars = {
-      CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN || "",
+      ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY || env.CLAUDE_CODE_OAUTH_TOKEN || "",
       MODEL: env.MODEL || "claude-sonnet-4-5",
     };
   }
@@ -39,7 +39,8 @@ export class AgentContainer extends Container {
 
 type Bindings = {
   AGENT_CONTAINER: DurableObjectNamespace<AgentContainer>;
-  CLAUDE_CODE_OAUTH_TOKEN: string;
+  ANTHROPIC_API_KEY?: string;
+  CLAUDE_CODE_OAUTH_TOKEN?: string;
   MODEL?: string;
   API_KEY: string;
 };
@@ -49,7 +50,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.get("/health", (c) => {
   return c.json({
     status: "healthy",
-    hasToken: !!c.env?.CLAUDE_CODE_OAUTH_TOKEN,
+    hasApiKey: !!(c.env?.ANTHROPIC_API_KEY || c.env?.CLAUDE_CODE_OAUTH_TOKEN),
     hasContainer: !!c.env?.AGENT_CONTAINER,
     timestamp: new Date().toISOString(),
   });
@@ -64,8 +65,8 @@ app.post("/query", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    if (!c.env.CLAUDE_CODE_OAUTH_TOKEN) {
-      return c.json({ error: "CLAUDE_CODE_OAUTH_TOKEN not set" }, 500);
+    if (!c.env.ANTHROPIC_API_KEY && !c.env.CLAUDE_CODE_OAUTH_TOKEN) {
+      return c.json({ error: "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN must be set" }, 500);
     }
 
     const body = await c.req.json().catch(() => ({}));
@@ -83,7 +84,7 @@ app.post("/query", async (c) => {
       ports: [8080],
       startOptions: {
         envVars: {
-          CLAUDE_CODE_OAUTH_TOKEN: c.env.CLAUDE_CODE_OAUTH_TOKEN,
+          ANTHROPIC_API_KEY: c.env.ANTHROPIC_API_KEY || c.env.CLAUDE_CODE_OAUTH_TOKEN || "",
           MODEL: c.env.MODEL || "claude-sonnet-4-5",
         },
       },
