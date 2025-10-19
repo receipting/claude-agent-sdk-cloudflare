@@ -75,7 +75,9 @@ Request → Worker → DO.idFromName(accountId) → Container → Claude SDK
 
 - Same `accountId` = same Durable Object = serialized requests
 - Different `accountId` = different Durable Objects = parallel execution
-- Containers stay warm 20 minutes (`sleepAfter` in server.ts)
+- Containers stay warm 5 minutes (`sleepAfter` in server.ts)
+
+**Learn more:** [Claude Agent SDK Documentation](https://docs.claude.com/en/api/agent-sdk/overview#core-concepts)
 
 ## Deploy
 
@@ -97,7 +99,7 @@ MODEL=claude-sonnet-4-5  # Optional, defaults to claude-sonnet-4-5
 
 ### Alternative: OAuth Token (Requires Anthropic Permission)
 
-If you have permission from Anthropic to use Claude Code OAuth tokens:
+If you have permission from Anthropic to use Claude Code OAuth tokens (see [authentication docs](https://docs.claude.com/en/api/agent-sdk/overview#core-concepts)):
 
 **Prerequisites:**
 ```bash
@@ -123,7 +125,7 @@ Note: OAuth tokens require prior approval from Anthropic. For most users, use `A
 
 **server.ts:**
 ```typescript
-sleepAfter = "20m";  // How long containers stay warm
+sleepAfter = "5m";  // How long containers stay warm
 const accountId = body.accountId || "default";  // Isolation key
 ```
 
