@@ -79,6 +79,25 @@ Request → Worker → DO.idFromName(accountId) → Container → Claude SDK
 
 **Learn more:** [Claude Agent SDK Documentation](https://docs.claude.com/en/api/agent-sdk/overview#core-concepts)
 
+## Agent Skills
+
+This repo demonstrates how to set up [Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) in containers (current best practice, though this may change in future SDK versions). Skills are modular capabilities that transform Claude from a general-purpose assistant into a domain specialist, packaging instructions and resources that Claude uses automatically when relevant. By enabling progressive disclosure of specialized knowledge, skills eliminate repetition and context overhead—making them the recommended approach for production Agent SDK deployments.
+
+**Included:** The `skill-test` skill in `.claude/skills/skill-test/` verifies the skills system is working.
+
+**Critical requirement:** The container **cannot run as root** when using `bypassPermissions` mode. The Claude CLI explicitly rejects the `--dangerously-skip-permissions` flag (which bypass mode maps to) when running as root user. This is a security measure to prevent accidental privilege escalation. The Dockerfile switches to the `node` user before running the agent (`USER node`).
+
+**Key setup requirements:**
+- `.claude/skills/` directory copied into container (see `Dockerfile`:21)
+- `settingSources: ['local', 'project']` in query options (see `container/server.ts`:36)
+- `permissionMode: 'bypassPermissions'` for autonomous operation (see `container/server.ts`:37)
+- Container runs as non-root user: `USER node` (see `Dockerfile`:25)
+
+**Test it:**
+```bash
+./test-skill.sh 8787
+```
+
 ## Deploy
 
 ```bash

@@ -17,6 +17,13 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+# Copy skills to project-level directory for auto-discovery
+COPY .claude ./.claude
+
+# Change ownership and switch to non-root user (required for bypassPermissions mode)
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 8080
 
 CMD ["node", "dist/server.js"]

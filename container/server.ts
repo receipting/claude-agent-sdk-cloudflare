@@ -31,7 +31,11 @@ const server = http.createServer(async (req, res) => {
       let responseText = "";
       const response = query({
         prompt,
-        options: { model: process.env.MODEL || "claude-sonnet-4-5" },
+        options: {
+          model: process.env.MODEL || "claude-sonnet-4-5",
+          settingSources: ['local', 'project'],
+          permissionMode: 'bypassPermissions'
+        },
       });
 
       for await (const message of response) {
@@ -39,6 +43,12 @@ const server = http.createServer(async (req, res) => {
           for (const block of message.message.content) {
             if (block.type === "text") {
               responseText += block.text;
+            }
+
+            // Log skill invocations
+            if (block.type === "tool_use" && block.name === "Skill") {
+              const skillCommand = block.input?.command || "unknown";
+              console.log(`[Skill] Invoking skill: ${skillCommand}`);
             }
           }
         }
