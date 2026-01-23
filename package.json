@@ -6,7 +6,8 @@
   "main": "server.ts",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@cloudflare/containers": "^0.0.28",
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250110.0",
     "@types/node": "^24.5.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.18"
   }
 }
